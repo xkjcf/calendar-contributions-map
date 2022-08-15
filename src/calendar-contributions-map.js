@@ -142,8 +142,7 @@ function calendarContributionsMap() {
 
     function chart() {
 
-        d3.select(chart.selector()).selectAll('svg.calendar-contributions-map').remove(); // remove the existing chart, if it exists
-        d3.select(chart.selector()).selectAll('div').remove(); // remove the existing chart, if it exists
+        d3.select(chart.selector()).selectAll('svg.calendar-contributions-map,div.day-cell-tooltip').remove(); // remove the existing chart, if it exists
 
         var dateRange = d3.timeDay.range(yearAgo, now); // generates an array of date objects within the specified range
         var monthRange = d3.timeMonth.range(moment(yearAgo).startOf('month').toDate(), now); // it ignores the first month if the 1st date is after the start of the month
