@@ -3,6 +3,15 @@ A [d3.js](https://d3js.org/) map representing time series data. Inspired by Gith
 
 ![Reusable D3.js Calendar Contributions Chart](example/thumbnail.png)
 
+## fork后的改进
+
+* 将对d3的依赖从v3升级到v5.
+* 修改了输入的数据内容中date字段可以是new Date()类型也可以是格式化的字符串类型.
+* 修复了固定显示53周数据的bug，自适应计算具体周数。
+* 修复了legend、month、week图标，由于位置错误导致显示不出来的问题。
+* 修改了图形外围padding的宽度。
+* 把默认的以周日为一周开始，修改为默认以周一为一周开始，符合中国人的计算习惯。
+
 ## Configuration
 
 |Property        | Usage           | Default  | Required |

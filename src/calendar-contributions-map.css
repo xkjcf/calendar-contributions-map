@@ -1,3 +1,7 @@
+svg {
+    dominant-baseline: hanging;
+}
+
 text.month-name,
 text.calendar-contributions-map-legend-text,
 text.day-initial {
@@ -23,7 +27,7 @@ rect.day-cell:hover {
     text-align: center;
 }
 
-.day-cell-tooltip > span {
+.day-cell-tooltip>span {
     font-family: Helvetica, arial, 'Open Sans', sans-serif
 }
 

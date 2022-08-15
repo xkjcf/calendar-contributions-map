@@ -13,11 +13,12 @@ function calendarContributionsMap() {
     var colorRange = ['#eee', '#c6e48b', '#7bc96f', '#239a3b', '#196127'];
     var SQUARE_LENGTH = 15;  // square length
     var SQUARE_PADDING = 2;  // square padding
-    var MONTH_LABEL_PADDING = 6;
-    var WEEK_LABEL_PADDING = 5;
-    var width = (SQUARE_LENGTH + SQUARE_PADDING) * 53 + WEEK_LABEL_PADDING; // (size + 2) * 53
+    var MONTH_LABEL_PADDING = 15;
+    var WEEK_LABEL_PADDING = 15;
+    var width = 0; //(SQUARE_LENGTH + SQUARE_PADDING) * 53 + WEEK_LABEL_PADDING; // (size + 2) * 53
     var height = (SQUARE_LENGTH + SQUARE_PADDING) * 8 + MONTH_LABEL_PADDING; // (size + 2) * 8 + 6
     var legendWidth = (SQUARE_LENGTH + SQUARE_PADDING) * (colorRange.length + 1) + 24 + SQUARE_PADDING;
+	var legendHeight = SQUARE_LENGTH;
     var now = moment().endOf('day').toDate();
     var yearAgo = moment().startOf('day').subtract(1, 'year').toDate();
     var startDate = null;
@@ -27,7 +28,7 @@ function calendarContributionsMap() {
     var tooltipUnit = 'contribution';
     var legendEnabled = true;
     var onClick = null;
-    var weekStart = 0; //0 for Sunday, 1 for Monday
+    var weekStart = 1; //0 for Sunday, 1 for Monday
     var locale = {
         months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
         days: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
@@ -43,6 +44,26 @@ function calendarContributionsMap() {
             return data;
         }
         data = value;
+        
+        let startWeekDay = moment(data[0].date).weekday();
+        let endWeekDay = moment(data[data.length-1].date).weekday();
+
+        // 通过时间序列的实际情况，计算总体的宽度。
+        // 实际的宽度，不一定为53列，可能会出现54列的情况。根据具体情况设置实际宽度。
+        if (weekStart === 0) {
+            if(startWeekDay == 0 || endWeekDay == 6) {
+                width = (SQUARE_LENGTH + SQUARE_PADDING) * 53 + WEEK_LABEL_PADDING;
+            } else {
+                width = (SQUARE_LENGTH + SQUARE_PADDING) * 54 + WEEK_LABEL_PADDING;
+            }
+        } else {
+            if(startWeekDay == 1 || endWeekDay == 0) {
+                width = (SQUARE_LENGTH + SQUARE_PADDING) * 53 + WEEK_LABEL_PADDING;
+            } else {
+                width = (SQUARE_LENGTH + SQUARE_PADDING) * 54 + WEEK_LABEL_PADDING;
+            }
+        }
+
         return chart;
     };
 
@@ -123,8 +144,8 @@ function calendarContributionsMap() {
 
         d3.select(chart.selector()).selectAll('svg.calendar-contributions-map').remove(); // remove the existing chart, if it exists
 
-        var dateRange = d3.time.days(yearAgo, now); // generates an array of date objects within the specified range
-        var monthRange = d3.time.months(moment(yearAgo).startOf('month').toDate(), now); // it ignores the first month if the 1st date is after the start of the month
+        var dateRange = d3.timeDay.range(yearAgo, now); // generates an array of date objects within the specified range
+        var monthRange = d3.timeMonth.range(moment(yearAgo).startOf('month').toDate(), now); // it ignores the first month if the 1st date is after the start of the month
         var firstDate = moment(dateRange[0]);
         if (max === null) {
             max = d3.max(chart.data(), function (d) {
@@ -157,18 +178,20 @@ function calendarContributionsMap() {
         drawChart();
 
         function drawChart() {
+            if(chart.legendEnabled()){
+                height = height + legendHeight + SQUARE_PADDING;
+            }
             var svg = d3.select(chart.selector())
                 .style('position', 'relative')
                 .append('svg')
                 .attr('width', width)
                 .attr('class', 'calendar-contributions-map')
                 .attr('height', height)
-                .style('padding', '36px');
+                .style('padding', '16px');
 
+			//  array of days for the last yr
             dayRects = svg.selectAll('.day-cell')
-                .data(dateRange);  //  array of days for the last yr
-
-            dayRects.enter().append('rect')
+                .data(dateRange).enter().append('rect')
                 .attr('class', 'day-cell')
                 .attr('width', SQUARE_LENGTH)
                 .attr('height', SQUARE_LENGTH)
@@ -178,7 +201,13 @@ function calendarContributionsMap() {
                 })
                 .attr('x', function (d, i) {
                     var cellDate = moment(d);
-                    var result = cellDate.week() - firstDate.week() + (firstDate.weeksInYear() * (cellDate.weekYear() - firstDate.weekYear()));
+
+                    var result = 0;
+                    if (weekStart === 1) {
+                        result = cellDate.isoWeek() - firstDate.isoWeek() + (firstDate.isoWeeksInYear() * (cellDate.isoWeekYear() - firstDate.isoWeekYear()));
+                    } else {
+                        result = cellDate.week() - firstDate.week() + (firstDate.weeksInYear() * (cellDate.weekYear() - firstDate.weekYear()));
+                    }
                     return result * (SQUARE_LENGTH + SQUARE_PADDING) + WEEK_LABEL_PADDING;
                 })
                 .attr('y', function (d, i) {
@@ -222,7 +251,8 @@ function calendarContributionsMap() {
                     .attr('x', function (d, i) {
                         return (width - legendWidth) + (i + 1) * (SQUARE_LENGTH + SQUARE_PADDING);
                     })
-                    .attr('y', height + SQUARE_PADDING)
+					// 5 是弥补字体和方框大小带来的误差
+                    .attr('y', height - SQUARE_LENGTH - 5)
                     .attr('fill', function (d) {
                         return d;
                     });
@@ -230,13 +260,13 @@ function calendarContributionsMap() {
                 legendGroup.append('text')
                     .attr('class', 'calendar-contributions-map-legend-text calendar-contributions-map-legend-text-less')
                     .attr('x', width - legendWidth - (SQUARE_LENGTH + SQUARE_PADDING))
-                    .attr('y', height + SQUARE_LENGTH)
+                    .attr('y', height - SQUARE_LENGTH)
                     .text(locale.Less);
 
                 legendGroup.append('text')
                     .attr('class', 'calendar-contributions-map-legend-text calendar-contributions-map-legend-text-more')
                     .attr('x', (width - legendWidth + SQUARE_PADDING) + (colorRange.length + 1) * (SQUARE_LENGTH + SQUARE_PADDING))
-                    .attr('y', height + SQUARE_LENGTH)
+                    .attr('y', height - SQUARE_LENGTH)
                     .text(locale.More);
             }
 
@@ -245,7 +275,7 @@ function calendarContributionsMap() {
                 .data(monthRange)
                 .enter().append('text')
                 .attr('class', 'month-name')
-                .style()
+                .style('text-anchor', 'middle')
                 .text(function (d) {
                     return locale.months[d.getMonth()];
                 })
@@ -256,7 +286,7 @@ function calendarContributionsMap() {
                         return moment(d).isSame(element, 'month') && moment(d).isSame(element, 'year');
                     });
 
-                    return Math.floor(matchIndex / 7) * (SQUARE_LENGTH + SQUARE_PADDING);
+                    return Math.floor(matchIndex / 7) * (SQUARE_LENGTH + SQUARE_PADDING) + WEEK_LABEL_PADDING;
                 })
                 .attr('y', 0);  // fix these to the top
 
@@ -265,7 +295,7 @@ function calendarContributionsMap() {
                 if (index % 2) {
                     svg.append('text')
                         .attr('class', 'day-initial')
-                        .attr('transform', 'translate(-8,' + (SQUARE_LENGTH + SQUARE_PADDING) * (index + 1) + ')')
+                        .attr('transform', 'translate(4,' + (SQUARE_LENGTH + SQUARE_PADDING) * (index + 1) + ')')
                         .style('text-anchor', 'middle')
                         .attr('dy', '2')
                         .text(day);
@@ -317,7 +347,7 @@ function calendarContributionsMap() {
         }
 
         var daysOfChart = chart.data().map(function (day) {
-            return day.date.toDateString();
+            return moment(day.date).toDate().toDateString();
         });
 
         // dayRects.filter(function (d) {
