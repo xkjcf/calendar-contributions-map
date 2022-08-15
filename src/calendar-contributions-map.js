@@ -143,6 +143,7 @@ function calendarContributionsMap() {
     function chart() {
 
         d3.select(chart.selector()).selectAll('svg.calendar-contributions-map').remove(); // remove the existing chart, if it exists
+        d3.select(chart.selector()).selectAll('div').remove(); // remove the existing chart, if it exists
 
         var dateRange = d3.timeDay.range(yearAgo, now); // generates an array of date objects within the specified range
         var monthRange = d3.timeMonth.range(moment(yearAgo).startOf('month').toDate(), now); // it ignores the first month if the 1st date is after the start of the month
@@ -231,7 +232,7 @@ function calendarContributionsMap() {
                             return Math.floor(i / 7) * SQUARE_LENGTH + 'px';
                         })
                         .style('top', function () {
-                            return formatWeekday(d.getDay()) * (SQUARE_LENGTH + SQUARE_PADDING) + MONTH_LABEL_PADDING * 2 + 'px';
+                            return formatWeekday(d.getDay()) * (SQUARE_LENGTH + SQUARE_PADDING) + MONTH_LABEL_PADDING * 2 + SQUARE_LENGTH + SQUARE_PADDING + 'px';
                         });
                 })
                     .on('mouseout', function (d, i) {
